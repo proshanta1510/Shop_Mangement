@@ -36,6 +36,15 @@ try {
 
   const adapter = {
     raw: db,
+    config,
+    databaseId: config.firestoreDatabaseId,
+    projectId: config.projectId,
+    async testPing() {
+      const t0 = Date.now();
+      const testRef = doc(db, 'cfg', 'main');
+      await getDocFromServer(testRef);
+      return Date.now() - t0;
+    },
     doc(path: string) {
       const dRef = doc(db, path);
       return {
@@ -58,11 +67,12 @@ try {
   };
 
   (window as any).__firebaseDB = adapter;
+  (window as any).FIREBASE_CONFIG = config;
   if (typeof (window as any).__onCloudDbInit === 'function') {
     (window as any).__onCloudDbInit(adapter);
   }
   window.dispatchEvent(new CustomEvent('cloud-db-ready', { detail: adapter }));
-  console.log('Firebase Cloud DB adapter initialized for:', config.firestoreDatabaseId);
+  console.log('✅ Firebase Cloud DB adapter ready for:', config.firestoreDatabaseId);
 } catch (e) {
   console.error('Firebase init error:', e);
 }

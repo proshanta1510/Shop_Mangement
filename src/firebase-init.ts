@@ -1,4 +1,4 @@
-import { initializeApp } from 'firebase/app';
+import { initializeApp, getApps, getApp } from 'firebase/app';
 import {
   getFirestore,
   doc,
@@ -7,26 +7,32 @@ import {
   getDoc,
   deleteDoc,
   onSnapshot,
-  enableIndexedDbPersistence
+  getDocFromServer
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously } from 'firebase/auth';
 import config from '../firebase-applet-config.json';
 
 try {
-  const app = initializeApp(config);
+  const app = getApps().length ? getApp() : initializeApp(config);
   const db = getFirestore(app, config.firestoreDatabaseId);
 
-  // Enable offline cache persistence for Firestore if available
-  try {
-    enableIndexedDbPersistence(db).catch(() => {
-      // Multiple tabs or browser unsupported, silent fallback
+  // Validate connection to Firestore as required by Firebase skill
+  getDocFromServer(doc(db, 'cfg', 'main'))
+    .then(() => {
+      console.log('✅ Firestore Cloud Connected:', config.firestoreDatabaseId);
+    })
+    .catch((err) => {
+      if (err instanceof Error && err.message.includes('the client is offline')) {
+        console.warn('Firestore offline note:', err.message);
+      }
     });
-  } catch (e) { }
 
-  const auth = getAuth(app);
-  signInAnonymously(auth).catch(() => {
-    // If anonymous auth is not configured, Firestore works with rules
-  });
+  try {
+    const auth = getAuth(app);
+    signInAnonymously(auth).catch(() => {
+      // Anonymous auth optional; rules permit read/write
+    });
+  } catch (e) {}
 
   const adapter = {
     raw: db,
@@ -56,6 +62,7 @@ try {
     (window as any).__onCloudDbInit(adapter);
   }
   window.dispatchEvent(new CustomEvent('cloud-db-ready', { detail: adapter }));
+  console.log('Firebase Cloud DB adapter initialized for:', config.firestoreDatabaseId);
 } catch (e) {
   console.error('Firebase init error:', e);
 }

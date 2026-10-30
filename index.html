@@ -19,6 +19,22 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
 <script type="module" src="/src/firebase-init.ts"></script>
+<script>
+(function(){
+  try{
+    var raw = localStorage.getItem('dp_me');
+    if (raw) {
+      var s = JSON.parse(localStorage.getItem('dp') || '{}');
+      var users = (s && s.users) || [];
+      var cred = null;
+      try { cred = JSON.parse(raw); } catch(e) { cred = { u: raw }; }
+      if (cred && cred.u && users.some(function(x){ return x.u == cred.u && (!cred.p || x.p == cred.p); })) {
+        document.documentElement.classList.add('is-logged-in');
+      }
+    }
+  }catch(e){}
+})();
+</script>
 <style>
 :root{--p:#0f766e;--bg:#eef2f7;--cd:#fff;--tx:#0f172a;--bd:#e2e8f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -28,9 +44,11 @@ body{font-family:'Hind Siliguri',system-ui,sans-serif;background:var(--bg);color
 button,input,select,textarea{font:inherit;color:var(--tx);background:var(--cd);border:1px solid var(--bd);border-radius:8px;padding:7px 10px;max-width:100%}
 button{cursor:pointer;background:var(--p);color:#fff;border:0;font-weight:600}button.o{background:var(--cd);color:var(--tx);border:1px solid var(--bd)}button.d{background:#dc2626}
 #lg{height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--p),#1e293b)}
+html.is-logged-in #lg{display:none!important}
 .lc{background:var(--cd);padding:32px;border-radius:20px;width:340px;max-width:92%;display:grid;gap:12px;text-align:center;box-shadow:0 20px 60px #0006}
 .logo{width:54px;height:54px;border-radius:50%;background:var(--p);color:#fff;display:grid;place-items:center;font-size:24px;font-weight:700;margin:auto;flex:none}
 #app{display:none;height:100%}
+html.is-logged-in #app{display:flex!important}
 aside{width:236px;background:linear-gradient(180deg,var(--p),#0f172a);color:#fff;padding:12px;overflow:auto;transition:.2s;flex:none}
 aside.mini{width:58px;overflow:hidden;padding:12px 6px}aside.mini .lb{display:none}aside.mini nav a{text-align:center;padding:9px 0;font-size:18px}
 aside nav a{display:block;padding:9px 12px;border-radius:10px;cursor:pointer;color:#fff;margin-bottom:3px;font-size:13px}aside nav a:hover,aside nav a.on{background:#fff3}
@@ -173,24 +191,71 @@ function fm(ti, fl, v, cb) {
 }
 const lgh = () => S.lo ? `<img src="${S.lo}" style="height:26px;vertical-align:middle;border-radius:4px"> ` : '🏪 ', lgi = e => { e.textContent = S.lo ? '' : S.shop.n[0]; e.style.background = S.lo ? `url(${S.lo}) center/cover` : ''; };
 const oc = () => S.od.filter(x => x.st == 'নতুন').length;
-function login() { if (!RDY) {
-    $('#le').textContent = '☁ ডাটা সিঙ্ক হচ্ছে, কয়েক সেকেন্ড অপেক্ষা করুন…';
-    return;
-} let u = S.users.find(x => x.u == $('#lu').value.trim() && x.p == $('#lp').value); if (!u) {
-    $('#le').textContent = 'ভুল ইউজারনেম/পাসওয়ার্ড';
-    return;
-} try {
-    localStorage.setItem('dp_me', u.u);
+function getSavedUser() {
+    try {
+        let raw = localStorage.getItem('dp_me');
+        if (!raw) return null;
+        let cred = null;
+        try { cred = JSON.parse(raw); } catch (e) { cred = { u: raw }; }
+        if (!cred || !cred.u) return null;
+        let u = S.users.find(x => x.u == cred.u && (!cred.p || x.p == cred.p));
+        return u || null;
+    } catch (e) {
+        return null;
+    }
 }
-catch (e) { } enter(u, 1); }
+function login() {
+    let un = ($('#lu').value || '').trim();
+    let pw = $('#lp').value || '';
+    if (!un || !pw) {
+        $('#le').textContent = 'ইউজারনেম এবং পাসওয়ার্ড দিন';
+        return;
+    }
+    let u = S.users.find(x => x.u == un && x.p == pw);
+    if (!u) {
+        $('#le').textContent = 'ভুল ইউজারনেম/পাসওয়ার্ড! আবার চেষ্টা করুন';
+        return;
+    }
+    $('#le').textContent = '';
+    try {
+        localStorage.setItem('dp_me', JSON.stringify({ u: u.u, p: u.p }));
+    } catch (e) { }
+    document.documentElement.classList.add('is-logged-in');
+    enter(u, 1);
+}
 let ck_;
-function enter(u, fresh) { me = u; $('#lg').style.display = 'none'; $('#od').style.display = 'none'; $('#app').style.display = 'flex'; th(S.th); document.documentElement.dataset.theme = S.dk ? 'dark' : ''; hd(); if (fresh)
-    log('লগইন'); let pg = S.pg || 'sale'; if (!can('m_' + pg))
-    pg = (NAV.find(n => can('m_' + n[0])) || ['sale'])[0]; go(pg); let tk = () => $('#clk').textContent = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' }); tk(); clearInterval(ck_); ck_ = setInterval(tk, 1000); osub(); pcat(); }
-function lo_() { try {
-    localStorage.removeItem('dp_me');
+function enter(u, fresh) {
+    me = u;
+    document.documentElement.classList.add('is-logged-in');
+    $('#lg').style.display = 'none';
+    $('#od').style.display = 'none';
+    $('#app').style.display = 'flex';
+    th(S.th);
+    document.documentElement.dataset.theme = S.dk ? 'dark' : '';
+    hd();
+    if (fresh) log('লগইন');
+    let pg = S.pg || 'sale';
+    if (!can('m_' + pg)) pg = (NAV.find(n => can('m_' + n[0])) || ['sale'])[0];
+    go(pg);
+    let tk = () => $('#clk').textContent = new Date().toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    tk();
+    clearInterval(ck_);
+    ck_ = setInterval(tk, 1000);
+    osub();
+    pcat();
 }
-catch (e) { } location.reload(); }
+function lo_() {
+    try {
+        localStorage.removeItem('dp_me');
+    } catch (e) { }
+    document.documentElement.classList.remove('is-logged-in');
+    me = null;
+    $('#app').style.display = 'none';
+    $('#lg').style.display = 'flex';
+    $('#lu').value = '';
+    $('#lp').value = '';
+    $('#le').textContent = '';
+}
 function hd() {
     let s = S.shop;
     $('#hn').innerHTML = lgh() + E(s.n);
@@ -203,13 +268,24 @@ function hd() {
 const tg = () => $('#sd').classList.toggle('mini');
 document.addEventListener('click', e => { if (!e.target.closest('#um,#un'))
     $('#um').hidden = true; });
-document.addEventListener('DOMContentLoaded', () => { $('#ln').textContent = S.shop.n; lgi($('#ll')); whenReady(() => { try {
-    let u = S.users.find(x => x.u == localStorage.getItem('dp_me'));
-    if (u)
-        enter(u);
+
+// পেজ রিলোড দিলে সাথে সাথে সেশন রিস্টোর যাতে লগআউট না হয়
+function initAppSession() {
+    $('#ln').textContent = S.shop.n;
+    lgi($('#ll'));
+    let u = getSavedUser();
+    if (u) {
+        enter(u, 0);
+    }
+    if (location.hash == '#order') {
+        opn();
+    }
 }
-catch (e) { } }); if (location.hash == '#order')
-    opn(); });
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAppSession);
+} else {
+    initAppSession();
+}
 // ===== CLOUD SYNC (সব ডিভাইসে একই ডাটা) =====
 function sst(m) { ST = m; let e = $('#hs'); if (e)
     e.textContent = { local: '💾 লোকাল মোড (সিঙ্ক বন্ধ)', sync: '☁ ক্লাউড সিঙ্ক চালু (সব ডিভাইস যুক্ত)', busy: '☁ সিঙ্ক হচ্ছে…', ro: '👁 শুধু দেখা যাবে (লেখার অনুমতি নেই)', err: '⚠ সিঙ্ক সমস্যা, আবার চেষ্টা হচ্ছে' }[m] || '';
@@ -301,20 +377,14 @@ function ssub() {
             }
             catch (e) { }
             if (v && v.shop) {
-                let c0 = {};
-                CK.forEach(k => c0[k] = S[k]);
-                if (CJ && JSON.stringify(c0) !== CJ) {
-                    qsync();
-                    setReady();
-                    return;
-                }
-                CK.forEach(k => { if (v[k] !== undefined)
-                    S[k] = v[k]; });
+                CK.forEach(k => { if (v[k] !== undefined) S[k] = v[k]; });
                 let c = {};
                 CK.forEach(k => c[k] = S[k]);
                 CJ = JSON.stringify(c);
-                if (me)
-                    me = S.users.find(u => u.u == me.u) || me;
+                if (me) {
+                    let refreshed = S.users.find(u => u.u == me.u && (!u.p || !me.p || u.p == me.p));
+                    if (refreshed) me = refreshed;
+                }
                 lsave();
                 rf();
             }
@@ -347,10 +417,7 @@ function applyC(k, sn) {
             return;
         let js = JSON.stringify(v), cur = S[k].find(x => kf(x) == id);
         if (cur) {
-            let cj = JSON.stringify(cur);
-            if (LS[k][id] !== undefined && cj !== LS[k][id])
-                return;
-            if (cj === js) {
+            if (JSON.stringify(cur) === js) {
                 LS[k][id] = js;
                 return;
             }
@@ -366,7 +433,7 @@ function applyC(k, sn) {
         S[k].sort((a, b) => ((a._o || 0) - (b._o || 0)) * (k == 'au' || k == 'od' ? -1 : 1));
         lsave();
         clearTimeout(rft);
-        rft = setTimeout(rf, 300);
+        rft = setTimeout(rf, 100);
     }
 }
 function rf() { if (!me) {

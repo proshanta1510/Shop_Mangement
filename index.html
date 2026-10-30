@@ -18,6 +18,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jsbarcode/3.11.6/JsBarcode.all.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<script type="module" src="/src/firebase-init.ts"></script>
 <style>
 :root{--p:#0f766e;--bg:#eef2f7;--cd:#fff;--tx:#0f172a;--bd:#e2e8f0;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
@@ -76,7 +77,7 @@ table{width:100%;border-collapse:collapse}th,td{padding:7px;border-bottom:1px so
 }
 @media(max-width:800px){.g2{grid-template-columns:1fr}aside{position:fixed;z-index:5;height:100%}}
 </style></head><body>
-<div id="lg"><div class="lc"><div class="logo" id="ll">দ</div><h2 id="ln"></h2><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password" onkeydown="if(event.key=='Enter')login()"><button onclick="login()">লগইন / Login</button><small id="le" style="color:#dc2626"></small><hr style="border:0;border-top:1px solid var(--bd)"><button class="o" onclick="opn()">🛍️ অনলাইনে অর্ডার করুন (কাস্টমার)</button><button class="o" id="lg-pwa-btn" onclick="promptPwaInstall()">📲 অ্যাপ ইনস্টল করুন</button></div></div>
+<div id="lg"><div class="lc"><div class="logo" id="ll">দ</div><h2 id="ln"></h2><input id="lu" placeholder="Username"><input id="lp" type="password" placeholder="Password" onkeydown="if(event.key=='Enter')login()"><button onclick="login()">লগইন / Login</button><small id="le" style="color:#dc2626"></small><hr style="border:0;border-top:1px solid var(--bd)"><button class="o" onclick="opn()">🛍️ অনলাইনে অর্ডার করুন (কাস্টমার)</button><button class="o" id="lg-pwa-btn" onclick="promptPwaInstall()">📲 অ্যাপ ইনস্টল করুন</button><div style="font-size:11px;color:#0f766e;display:flex;align-items:center;justify-content:center;gap:4px;margin-top:2px"><span id="lg-cloud-status">☁ ক্লাউড সিঙ্ক চালু (যেকোনো ডিভাইসে কানেক্টেড)</span></div></div></div>
 <div id="app"><aside id="sd"><nav id="nv"></nav></aside>
 <main><header><span id="hn" style="font-weight:700"></span><span id="ho"></span><span id="hm"></span><span id="hs" style="font-size:12px"></span><span id="clk"></span></header>
 <div class="tools"><button class="o" onclick="tg()">☰</button><div class="cb" id="cb"></div><button onclick="cl()">🔒 <span>ক্লোজিং</span></button><button class="o" onclick="nc()">💵 <span>নোট কাউন্টার</span></button><button class="o" onclick="ca()">🧮</button><button class="o" onclick="lg_()">🌐 বাংলা/EN</button><input type="color" id="co" title="Color" oninput="th(this.value)" style="padding:0;width:36px;height:34px"><button class="o" onclick="dk()">🌓</button><button class="o" id="btn-pwa-install" onclick="promptPwaInstall()" style="font-weight:700;color:var(--p)">📲 <span>ইনস্টল</span></button><span id="net-stat" class="bd" style="font-size:11px;background:#15803d;cursor:default" title="নেটওয়ার্ক অবস্থা">🟢 অনলাইন</span>
@@ -105,7 +106,7 @@ S.lo = S.lo || '';
 S.cl = S.cl || {};
 S.nt = S.nt || {};
 let ST = 'local', stT, RDY = false, RQ = [], CJ = '', SR = false, pushing = false, again = false, rft;
-const SK = ['pr', 'cu', 'sl', 'ex', 'au', 'pu', 'rl', 'pay', 'mjl', 'pv', 'pl2', 'od'], CK = ['shop', 'users', 'lo', 'vm', 'cl', 'nt', 'eh', 'bk', 'ph', 'pe'], kf = x => String(x.id != null ? x.id : x._k), LS = {};
+const SK = ['pr', 'cu', 'sl', 'ex', 'au', 'pu', 'rl', 'pay', 'mjl', 'pv', 'pl2', 'od'], CK = ['shop', 'users', 'lo', 'vm', 'cl', 'nt', 'eh', 'bk', 'ph', 'pe'], kf = x => String((x && (x.id != null ? x.id : x._k)) || nid()).replace(/[\/\s]/g, '_'), LS = {};
 SK.forEach(k => LS[k] = {});
 let _ln = 0;
 const nid = () => { let n = Date.now() * 1000 + Math.floor(Math.random() * 1000); if (n <= _ln)
@@ -211,7 +212,9 @@ catch (e) { } }); if (location.hash == '#order')
     opn(); });
 // ===== CLOUD SYNC (সব ডিভাইসে একই ডাটা) =====
 function sst(m) { ST = m; let e = $('#hs'); if (e)
-    e.textContent = { local: '💾 লোকাল মোড (সিঙ্ক বন্ধ)', sync: '☁ সিঙ্ক চালু', busy: '☁ সিঙ্ক হচ্ছে…', ro: '👁 শুধু দেখা যাবে (লেখার অনুমতি নেই)', err: '⚠ সিঙ্ক সমস্যা, আবার চেষ্টা হচ্ছে' }[m] || ''; }
+    e.textContent = { local: '💾 লোকাল মোড (সিঙ্ক বন্ধ)', sync: '☁ ক্লাউড সিঙ্ক চালু (সব ডিভাইস যুক্ত)', busy: '☁ সিঙ্ক হচ্ছে…', ro: '👁 শুধু দেখা যাবে (লেখার অনুমতি নেই)', err: '⚠ সিঙ্ক সমস্যা, আবার চেষ্টা হচ্ছে' }[m] || '';
+    let lgc = $('#lg-cloud-status'); if (lgc)
+    lgc.textContent = { local: '💾 লোকাল মোড (অফলাইন)', sync: '☁ ক্লাউড সার্ভার কানেক্টেড (সব ডিভাইসে একই ডাটা)', busy: '☁ ডাটা সিঙ্ক হচ্ছে…', ro: '👁 ক্লাউড ভিউ মোড', err: '⚠ ক্লাউড সংযোগ চেক করা হচ্ছে…' }[m] || ''; }
 function setReady() { if (RDY)
     return; RDY = true; let q = RQ; RQ = []; q.forEach(c => { try {
     c();
@@ -381,22 +384,27 @@ function rf() { if (!me) {
 }
 else if (!typing && !open && ['dash', 'rep', 'cus', 'pl', 'mj', 'ord', 'inv', 'au', 'stf'].includes(p))
     go(p); }
+function attachDb(d) {
+    if (!d || DB) return;
+    DB = d;
+    sst('sync');
+    ssub();
+    osub();
+    pcat();
+    qsync();
+}
 try {
-    if (typeof claude !== 'undefined' && claude && claude.use) {
-        claude.use('db').then(d => { DB = d; if (d) {
-            sst('sync');
-            ssub();
-            osub();
-            pcat();
-            qsync();
-        }
-        else {
-            sst('local');
-            setReady();
-        } }).catch(() => { sst('local'); setReady(); });
+    if (window.__firebaseDB) {
+        attachDb(window.__firebaseDB);
     } else {
-        sst('local');
-        setReady();
+        window.__onCloudDbInit = function(d) { attachDb(d); };
+        window.addEventListener('cloud-db-ready', function(e) { attachDb(e.detail); });
+        setTimeout(function() {
+            if (!DB) {
+                sst('local');
+                setReady();
+            }
+        }, 4000);
     }
 }
 catch (e) {
@@ -907,12 +915,14 @@ function osd() {
                 localStorage.setItem('dp_my', JSON.stringify(my));
             }
             catch (e) { }
-            if (DB && typeof claude !== 'undefined' && claude && claude.use) {
-                let us = yield claude.use('user'), uid = us ? yield us.id() : '';
-                if (uid) {
-                    yield DB.doc('orders/' + uid).set({ list: my });
-                    sent = true;
+            if (DB) {
+                let uid = localStorage.getItem('dp_cuid');
+                if (!uid) {
+                    uid = 'cust_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+                    try { localStorage.setItem('dp_cuid', uid); } catch(e){}
                 }
+                yield DB.doc('orders/' + uid).set({ list: my, updated: Date.now() });
+                sent = true;
             }
         }
         catch (e) { }
@@ -1562,12 +1572,14 @@ osd = function () {
                 localStorage.setItem('dp_my', JSON.stringify(my));
             }
             catch (e) { }
-            if (DB && typeof claude !== 'undefined' && claude && claude.use) {
-                let us = yield claude.use('user'), uid = us ? yield us.id() : '';
-                if (uid) {
-                    yield DB.doc('orders/' + uid).set({ list: my });
-                    sent = true;
+            if (DB) {
+                let uid = localStorage.getItem('dp_cuid');
+                if (!uid) {
+                    uid = 'cust_' + Math.random().toString(36).slice(2) + Date.now().toString(36);
+                    try { localStorage.setItem('dp_cuid', uid); } catch(e){}
                 }
+                yield DB.doc('orders/' + uid).set({ list: my, updated: Date.now() });
+                sent = true;
             }
         }
         catch (e) { }
@@ -2653,33 +2665,72 @@ window.addEventListener('appinstalled', () => {
 
 function promptPwaInstall() {
     if (isStandalone) {
-        return alert('দুর্গাপুর এন্টারপ্রাইজ ইতিমধ্যে আপনার ডিভাইসে অ্যাপ হিসেবে ইনস্টল করা আছে।');
+        return alert('🎉 দুর্গাপুর এন্টারপ্রাইজ ইতিমধ্যে আপনার এই ডিভাইসে অ্যাপ হিসেবে ইনস্টল করা আছে।');
     }
-    let isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    const inIframe = window.self !== window.top;
+    const directUrl = location.href;
+    const isIOS = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase());
+    const isAndroid = /android/i.test(navigator.userAgent);
+
     if (deferredPwaPrompt) {
         deferredPwaPrompt.prompt();
         deferredPwaPrompt.userChoice.then(choice => {
             if (choice.outcome === 'accepted') {
                 deferredPwaPrompt = null;
                 updatePwaUI();
+                alert('🎉 ইনস্টলেশন প্রক্রিয়া সম্পন্ন হচ্ছে! কিছুক্ষণের মধ্যে আপনার অ্যাপস মেনুতে যুক্ত হবে।');
             }
         });
-    } else if (isIOS) {
-        md(`<h3>📲 iPhone / iPad এ অ্যাপ ইনস্টল করুন</h3>
-        <div style="font-size:14px;line-height:1.6;display:grid;gap:8px">
-            <div>১. সাফারী (Safari) ব্রাউজারের নিচের <b>Share (শেয়ার) বাটন 📤</b> চাপুন।</div>
-            <div>২. একটু নিচে স্ক্রোল করে <b>'Add to Home Screen' (হোম স্ক্রিনে যোগ করুন) ➕</b> চাপুন।</div>
-            <div>৩. উপরে ডানে <b>'Add'</b> চাপলে অ্যাপটি হোম স্ক্রিনে ইনস্টল হয়ে যাবে।</div>
-        </div>
-        <button onclick="mx()" style="margin-top:10px">ঠিক আছে</button>`);
-    } else {
-        md(`<h3>📲 ওয়েব অ্যাপ ইনস্টল ও ব্যবহার</h3>
-        <div style="font-size:14px;line-height:1.6;display:grid;gap:8px">
-            <div>ব্রাউজারের মেনু (⋮ বা ⚙) থেকে <b>'Install App' / 'অ্যাপ ইনস্টল করুন'</b> অথবা <b>'Add to Home screen'</b> চাপুন।</div>
-            <div style="color:#0f766e;font-size:12px">✔ ইনস্টল করার পর কম্পিউটার বা ফোনে এটি একটি পূর্ণাঙ্গ সফটওয়্যারের মতো নেট ছাড়াও সরাসরি চালু হবে।</div>
-        </div>
-        <button onclick="mx()" style="margin-top:10px">বুঝেছি</button>`);
+        return;
     }
+
+    let h = `<div style="display:grid;gap:10px;text-align:left">
+        <div style="display:flex;align-items:center;gap:10px;padding:10px;background:var(--bg);border-radius:12px">
+            <span style="font-size:28px">📲</span>
+            <div>
+                <b style="font-size:15px;color:var(--p)">দুর্গাপুর এন্টারপ্রাইজ সফটওয়্যার ইনস্টল</b>
+                <div style="font-size:12px;color:#64748b">প্লে-স্টোর বা কোনো ফাইল ডাউনলোড ছাড়াই সরাসরি ব্রাউজার থেকে অ্যাপ তৈরি হয়।</div>
+            </div>
+        </div>`;
+
+    if (inIframe) {
+        h += `<div style="background:#fef3c7;border:1px solid #f59e0b;padding:10px;border-radius:10px;font-size:13px;line-height:1.5">
+            <b>💡 প্রিভিউতে আছেন:</b> ব্রাউজার নিরাপত্তার কারণে প্রিভিউ ফ্রেমের ভেতরে সরাসরি ইনস্টল বাটন কাজ করতে পারে না। নিচের বাটনে চাপলে সরাসরি আসল ব্রাউজারে পূর্ণাঙ্গ উইন্ডোয় খুলবে এবং সাথে সাথে ইনস্টল করতে পারবেন।
+        </div>
+        <a href="${directUrl}" target="_blank" rel="noopener" style="text-decoration:none">
+            <button style="width:100%;padding:12px;font-size:14px;font-weight:700">↗ আলাদা ট্যাবে পূর্ণাঙ্গ অ্যাপ খুলুন ও ইনস্টল করুন</button>
+        </a>`;
+    }
+
+    if (isAndroid) {
+        h += `<div style="padding:10px;border:1px solid var(--bd);border-radius:10px;font-size:13px;line-height:1.6">
+            <b>📱 Android ফোনে ইনস্টল করার সহজ নিয়ম:</b>
+            <div>১. ক্রোম (Chrome) ব্রাউজারের উপরে ডানে <b>তিনটি বিন্দু (⋮)</b> চাপুন।</div>
+            <div>২. মেনু থেকে <b>'Install app' (অ্যাপ ইনস্টল করুন)</b> অথবা <b>'Add to Home screen' (হোম স্ক্রিনে যোগ করুন)</b> চাপুন।</div>
+            <div>৩. <b>Install</b> চাপলে সরাসরি আপনার মোবাইলের হোম স্ক্রিন ও অ্যাপ লিস্টে যুক্ত হয়ে যাবে।</div>
+        </div>`;
+    } else if (isIOS) {
+        h += `<div style="padding:10px;border:1px solid var(--bd);border-radius:10px;font-size:13px;line-height:1.6">
+            <b>🍏 iPhone / iPad এ ইনস্টল করার নিয়ম:</b>
+            <div>১. সাফারি (Safari) ব্রাউজারের নিচের <b>Share (শেয়ার) বাটন 📤</b> চাপুন।</div>
+            <div>২. একটু নিচে গিয়ে <b>'Add to Home Screen' (হোম স্ক্রিনে যোগ করুন) ➕</b> চাপুন।</div>
+            <div>৩. উপরে ডানে <b>'Add'</b> চাপলে অ্যাপটি হোম স্ক্রিনে ইনস্টল হয়ে যাবে।</div>
+        </div>`;
+    } else {
+        h += `<div style="padding:10px;border:1px solid var(--bd);border-radius:10px;font-size:13px;line-height:1.6">
+            <b>💻 কম্পিউটার / ল্যাপটপে ইনস্টল করার নিয়ম:</b>
+            <div>১. Chrome বা Edge ব্রাউজারের অ্যাড্রেস বারের একদম ডানে <b>'Install' (⊕ বা 💻 কম্পিউটার আইকন)</b> দেখতে পাবেন।</div>
+            <div>২. অথবা ব্রাউজারের মেনু (⋮) ➔ <b>'Save and share' ➔ 'Install Durgapur Enterprise'</b> চাপুন।</div>
+            <div>৩. ইনস্টল করলে আলাদা সফটওয়্যার উইন্ডোয় ফুল-স্ক্রিনে চলবে।</div>
+        </div>`;
+    }
+
+    h += `<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">
+        ${!inIframe ? `<button class="o" onclick="window.open(location.href,'_blank')">↗ নতুন উইন্ডো</button>` : ''}
+        <button onclick="mx()">বুঝেছি</button>
+    </div></div>`;
+
+    md(h);
 }
 
 // নেটওয়ার্ক অবস্থা পর্যবেক্ষণ
